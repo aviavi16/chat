@@ -17,14 +17,72 @@
     </style>
   </head>
   <body>
+    <label> 
+        <input type="radio" value="politics" name="topic" onchange="onSetTopic(this.value)" checked="true" /> 
+            Politics
+    </label>
+    <label> 
+        <input type="radio" value="love" name="topic" onchange="onSetTopic(this.value)"/> 
+            Love 
+    </label>
+
     <ul id="messages"></ul>
-    <form id="form" action="">
+    <form id="form" onsubmit="onSendMessage(event)">
       <input id="input" autocomplete="off" /><button>Send</button>
     </form>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+
+        const nickname = sessionStorage.getItem('nickname') || prompt('Welcome. Please Enter Your Name')
+        sessionStorage.setItem('nickname', nickname)
+        
+        let gTopic
+        onSetTopic('politics')
+
+        socket.emit('set-user-socket', nickname)
+        
+        socket.on('add-msgs', addMsgs) //msgs => addMsgs(msgs)
+        
+        socket.on('add-msg', addMsg)
+
+        function addMsgs(msgs){
+            const elUl = document.querySelector('#messages')
+            elUl.innerHTML = ''
+            msgs.forEach(addMsg);
+        }
+
+        function addMsg(msg){
+            const elUl = document.querySelector('#messages')
+            const from = (msg.from === nickname) ? 'me' : msg.from
+            elUl.innerHTML += `<li> <b> ${from}:</b> ${msg.txt} </li>`
+        }
+
+        function onSendMessage(ev){
+            ev.preventDefault()
+
+            const elInput = document.querySelector('#input')
+
+            if(elInput.value){
+                const msg = {
+                    txt: elInput.value,
+                    from: nickname,
+                    topic: gTopic,
+                    //to: 'avinoam'
+                }
+                
+                socket.emit('send-msg', msg);
+                elInput.value = '';
+            }
+        }
+
+        function onSetTopic(topic){
+            gTopic = topic
+
+            socket.emit('set-topic',topic)
+        }
+
     </script>
   </body>
 </html>
